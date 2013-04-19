@@ -1,17 +1,10 @@
-var listeners = function() { 
+var listeners = function(game) { 
 	$('html').keydown(function(event) {
 		switch(event.keyCode){
 			case 37:
-			game.ship.velocity += 0.2;
-			break;
-			case 39:
-			game.ship.rotate = [0,1];
-			break;
-			case 40:
-			game.ship.rotate = [1,0];
-			break;
+			game.ship.fireBullet();
 		}
-	}
+	});
 };
 
 $(document).ready(function(){

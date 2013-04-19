@@ -61,7 +61,10 @@ function Game (canvas) {
  	  for(var i = 0; i < this.asteroids.length; i++){
  	  	this.asteroids[i].draw(this.canvas);
  	  }
- 	  this.ship.draw(this.canvas)
+
+		for(var i = 0; i < this.ship.bullets.length; i++){
+			this.ship.draw(this.canvas);
+		}
 	};
 	//NED - should we always bind
 
@@ -70,6 +73,16 @@ function Game (canvas) {
  	  for(var i = 0; i < that.asteroids.length; i++){
  	  	that.asteroids[i].update();
  	  }
+
+ 	  var offset = 	0;
+ 	  for(var i = 0; i < that.ship.bullets.length; i++){
+ 	  	var testBullet = that.ship.bullets[i];
+ 	  	testBullet.update();
+ 	  	if(testBullet.position[1] < 0 || testBullet.position[1] > 800 || testBullet.position[0] < 0 || testBullet.position[0] > 800){
+				that.ship.bullets.slice(i - offset, i + 1 - offset);
+				offset += 1 	;
+			}
+ 	  };
 
  	  that.canvas.clearRect(0,0,800,800);
  	  that.draw(that.canvas);
@@ -83,7 +96,7 @@ function Game (canvas) {
 			this.asteroids.push(new Asteroid());
 		}
 		//setInterval, call Game#update, follow with Game#draw.
-		window.setInterval(that.update, 100);
+		window.setInterval(that.update, 32);
 	};
 };
 
@@ -97,6 +110,7 @@ function Ship (ctx) {
 	this.speed = 0;
 	this.radius = 10.5;
 	this.velocity = {x: 0, y: 0}
+	this.bullets = []
 
 
 	this.draw = function(ctx) {
@@ -118,6 +132,11 @@ function Ship (ctx) {
 
 	};
 
+	this.fireBullet = function() {
+		this.bullets.push(new Bullet(this));
+		console.log(this.bullets);
+	};
+
 	this.isHit = function(asteroids) {
 		for(var i = 0; i < asteroids.length; i++){
 			if(distance(this.position, asteroids[i].position) < (this.radius + asteroids[i].radius)){
@@ -127,7 +146,27 @@ function Ship (ctx) {
 	};
 };
 
-function Bullet (){
+function Bullet (ship){
+	this.position = ship.position;
+	this.radius = 2
+	this.speed = 8;
+	this.velocity = {x: this.speed * Math.sin(ship.rotation), y: this.speed * Math.cos(ship.rotation)};
+
+	this.draw = function(ctx) {
+		console.log(this.position);
+		ctx.fillStyle = "FF0000";
+		ctx.beginPath();
+		ctx.arc(this.position[1],this.position[0], this.radius, 0, 2*Math.PI);
+		ctx.fill();
+	};
+
+	this.update = function() {
+
+		this.position = [this.position[0] + this.velocity['x'],
+										 this.position[1] + this.velocity['y']];
+	};
+
+
 	
 }
 
