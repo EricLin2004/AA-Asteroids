@@ -24,7 +24,6 @@ Asteroid.prototype.draw = function(canvas) {
 	};
 
 Asteroid.prototype.update = function() {
-
 		this.position = [this.position[0] + this.velocity['x'],
 										 this.position[1] + this.velocity['y']];
 		if(this.position[1] < 0){
@@ -61,7 +60,11 @@ function Game (canvas) {
  	  for(var i = 0; i < this.asteroids.length; i++){
  	  	this.asteroids[i].draw(this.canvas);
  	  }
- 	  this.ship.draw(this.canvas)
+ 	  this.ship.draw(this.canvas);
+
+ 	  for(var i = 0; i < this.ship.bullets.length; i++){
+      this.ship.bullets[i].draw(this.canvas);
+    }
 	};
 	//NED - should we always bind
 
@@ -69,7 +72,28 @@ function Game (canvas) {
 		//call Asteroid update
  	  for(var i = 0; i < that.asteroids.length; i++){
  	  	that.asteroids[i].update();
+
+ 	  	var bulletOffset = 0;
+ 	  	var asteroidOffset = 0;
+   		for(var j = 0; j < that.ship.bullets.length; j++){
+	    	var testBullet = that.ship.bullets[j];
+	    	testBullet.update();
+
+      if(distance(testBullet.position, that.asteroids[i].position) < (testBullet.radius + that.asteroids[i].radius)){
+				that.ship.bullets.splice(j - bulletOffset, 1);
+      	bulletOffset += 1;
+      	
+      	that.asteroids.splice(i - asteroidOffset, 1)
+      	that.asteroids.push(new Asteroid());
+      	asteroidOffset += 1;
+			}	
+
+      if(testBullet.position[1] < 0 || testBullet.position[1] > 800 || testBullet.position[0] < 0 || testBullet.position[0] > 800){
+      	that.ship.bullets.splice(j - bulletOffset, 1);
+      	bulletOffset += 1;
+    	}
  	  }
+   };
 
  	  that.canvas.clearRect(0,0,800,800);
  	  that.draw(that.canvas);
@@ -83,7 +107,7 @@ function Game (canvas) {
 			this.asteroids.push(new Asteroid());
 		}
 		//setInterval, call Game#update, follow with Game#draw.
-		window.setInterval(that.update, 100);
+		window.setInterval(that.update, 32);
 	};
 };
 
@@ -96,27 +120,57 @@ function Ship (ctx) {
 	this.position = [400,400];
 	this.speed = 0;
 	this.radius = 10.5;
-	this.velocity = {x: 0, y: 0}
+	this.rotation = 0;
+	this.velocity = {x: 0, y: 0};
+	this.bullets = [];
 
 
-	this.draw = function(ctx) {
+	this.draw = function(ctx, rotation) {
 		ctx.fillStyle = "#FF35E1";
-		// ctx.save();
-		// ctx.rotate(20*Math.PI/180);
 		ctx.beginPath();
-		
+
+		rotatedX = Math.sin(this.rotation);
+		rotatedY = Math.cos(this.rotation);	
+		this.velocity['x'] = (rotatedX * this.speed);
+		this.velocity['y'] = (rotatedY * this.speed);
+
+		this.position[1] = this.position[1] + this.velocity['x'];
+		this.position[0] = this.position[0] - this.velocity['y'];
+
+		if(this.position[1] < 0){
+			this.position[1] = 799;
+		}else if(this.position[1] > 800){
+			this.position[1] = 1;
+		}else if(this.position[0] < 0){
+			this.position[0] = 799;
+		}else if(this.position[0] > 800){
+			this.position[0] = 1;
+		};
+
 		ctx.moveTo(this.position[1], this.position[0]);
-		ctx.lineTo(this.position[1] - 12, this.position[0] + 15);
-		ctx.lineTo(this.position[1], this.position[0] - 18);
-		ctx.lineTo(this.position[1] + 12,this.position[0] + 15);
+
+		var rotatedX = (-12)*Math.cos(this.rotation) - (15)*Math.sin(this.rotation);
+		var rotatedY = (-12)*Math.sin(this.rotation) + (15)*Math.cos(this.rotation);
+		ctx.lineTo(this.position[1] + rotatedX, this.position[0] + rotatedY);
+
+		rotatedX = (19.2093727123)*Math.sin(this.rotation);
+		rotatedY = (-19.2093727123)*Math.cos(this.rotation);
+		ctx.lineTo(this.position[1] + rotatedX, this.position[0] + rotatedY);
+
+		rotatedX = (12)*Math.cos(this.rotation) - (15)*Math.sin(this.rotation);
+		rotatedY = (12)*Math.sin(this.rotation) + (15)*Math.cos(this.rotation);
+		ctx.lineTo(this.position[1] + rotatedX, this.position[0] + rotatedY);
+
 		ctx.lineTo(this.position[1], this.position[0]);
 		ctx.fill();
 		ctx.stroke();
 		ctx.closePath();
-		//ctx.restore();
-		//ctx.rotate(200*Math.PI/180);
-
 	};
+
+	this.fireBullet = function() {
+    this.bullets.push(new Bullet(this));
+    console.log(this.bullets);
+  };
 
 	this.isHit = function(asteroids) {
 		for(var i = 0; i < asteroids.length; i++){
@@ -127,8 +181,26 @@ function Ship (ctx) {
 	};
 };
 
-function Bullet (){
-	
+function Bullet (ship){
+  this.position = ship.position;
+  this.radius = 2
+  
+  this.velocity = {x: Math.sin(ship.rotation), y: Math.cos(ship.rotation)};
+  this.speed = Math.sqrt(Math.pow(this.velocity['x'], 2) + Math.pow(this.velocity['y'], 2));
+
+  this.draw = function(ctx) {
+    console.log(this.position);
+    ctx.fillStyle = "FF0000";
+    ctx.beginPath();
+    ctx.arc(this.position[1],this.position[0], this.radius, 0, 2*Math.PI);
+    ctx.fill();
+  };
+
+  this.update = function() {
+
+    this.position = [this.position[0] + this.velocity['x']*this.speed,
+                     this.position[1] + this.velocity['y']*this.speed];
+ 	};
 }
 
 
